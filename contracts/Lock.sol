@@ -20,10 +20,10 @@ contract MultiCreatorSubscriptionService {
     event SubscriptionPurchased(address indexed user, uint256 indexed productId, uint256 endTime);
     event Withdrawal(address indexed creator, uint256 indexed productId, uint256 amount);
     event OwnersWithdrawl(address creator, uint256 amount);
+    
     constructor() {
         s_owner = msg.sender;
     }
-
     modifier onlyCreator(uint256 productId) {
         require(products[productId].creator == msg.sender, "Only the creator can perform this action");
         _;
@@ -108,16 +108,17 @@ contract MultiCreatorSubscriptionService {
         Product storage product = products[productId];
         require(amount <= product.collected, "Amount exceeds collected funds");
 
-        product.collected -= amount;
         payable(msg.sender).transfer(amount);
+        product.collected -= amount;
 
         emit Withdrawal(msg.sender, productId, amount);
     }
     function ownersWithdrawl( uint256 amount) external onlyOwner() {
         require(amount <= owner_balance, "Amount exceeds collected funds");
 
-        owner_balance -= amount;
+        
         payable(msg.sender).transfer(amount);
+        owner_balance -= amount;
 
         emit OwnersWithdrawl(msg.sender, amount);
     }
@@ -127,8 +128,11 @@ contract MultiCreatorSubscriptionService {
     function getCreatorsProducts() external view returns (uint256[] memory) {
         return creatorsProducts[msg.sender];
     }
-    function getOwnerBalance() external view returns (uint256) {
+    function getOwnersBalance() external view returns (uint256) {
         return owner_balance;
+    }
+    function getOwnersCut() external view returns (uint256) {
+        return owners_cut;
     }
     function getSubscriptionEnd(uint256 productId) external view returns (bool) {
         return userSubscriptions[msg.sender][productId] < block.timestamp;
@@ -136,7 +140,7 @@ contract MultiCreatorSubscriptionService {
     function getSubscriptionEndDate(uint256 productId) external view returns (uint256) {
         return userSubscriptions[msg.sender][productId];
     }
-    function withdrawFunds(uint256 productId) external view returns (Product memory){
+    function getProductDetails(uint256 productId) external view returns (Product memory){
         return products[productId];
     }
 }
