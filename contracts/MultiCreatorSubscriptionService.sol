@@ -1,18 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 contract MultiCreatorSubscriptionService {
+   
     struct Product {
         address creator;
         uint256 fee;
         uint256 collected;
     }
+   
+   
     mapping(uint256 => Product) public products; // Product ID => Product details
     mapping(address => mapping(uint256 => uint256)) public userSubscriptions; // User => Product ID => End Timestamp
-    mapping(address => uint256[]) public creatorsProducts;
+    mapping(address => uint256[]) public creatorsProducts; // Creator's Address => products
+   
+   
     address public s_owner;
     uint256 public owner_balance;
     uint256 public owners_cut;
     uint256[] public allIds;
+   
     event CutUpdated(uint256 cut);
     event ProductCreated(uint256 indexed productId, address indexed creator, uint256 fee);
     event ProductUpdated(uint256 indexed productId, address indexed creator, uint256 fee);
@@ -24,6 +30,7 @@ contract MultiCreatorSubscriptionService {
     constructor() {
         s_owner = msg.sender;
     }
+
     modifier onlyCreator(uint256 productId) {
         require(products[productId].creator == msg.sender, "Only the creator can perform this action");
         _;
@@ -38,6 +45,7 @@ contract MultiCreatorSubscriptionService {
         owners_cut = cut;
         emit CutUpdated({cut:cut});
     }
+
     function createProduct(uint256 fee) external {
         require(fee > 0, "Fee must be greater than zero");
         uint256 productId = allIds.length + 1;
@@ -50,6 +58,7 @@ contract MultiCreatorSubscriptionService {
         allIds.push(productId);
         emit ProductCreated(productId, msg.sender, fee);
     }
+
     function deleteProduct(uint256 productId) external onlyCreator(productId){
         require(products[productId].creator != address(0), "Product doesn't exists");
         products[productId] = Product({
@@ -69,6 +78,7 @@ contract MultiCreatorSubscriptionService {
         creatorsProducts[msg.sender] = updated_product;
         emit ProductDeleted(productId);
     }
+
     function updateProduct(uint256 productId, uint256 fee) external onlyCreator(productId){
         require(fee > 0, "Fee must be greater than zero");
         uint256 balance = products[productId].collected;
@@ -80,6 +90,7 @@ contract MultiCreatorSubscriptionService {
             });
         emit ProductUpdated(productId, msg.sender, fee);
     }
+
     function subscribe(uint256 productId, uint256 subscriptionType) external payable {
         Product storage product = products[productId];
         require(product.creator != address(0), "Invalid product ID");
@@ -104,6 +115,7 @@ contract MultiCreatorSubscriptionService {
 
         emit SubscriptionPurchased(msg.sender, productId, newEndTime);
     }
+
     function withdrawFunds(uint256 productId, uint256 amount) external onlyCreator(productId) {
         Product storage product = products[productId];
         require(amount <= product.collected, "Amount exceeds collected funds");
@@ -113,6 +125,7 @@ contract MultiCreatorSubscriptionService {
 
         emit Withdrawal(msg.sender, productId, amount);
     }
+
     function ownersWithdrawl( uint256 amount) external onlyOwner() {
         require(amount <= owner_balance, "Amount exceeds collected funds");
 
@@ -122,6 +135,7 @@ contract MultiCreatorSubscriptionService {
 
         emit OwnersWithdrawl(msg.sender, amount);
     }
+    
     function getProductBalance(uint256 productId) external view returns (uint256) {
         return products[productId].collected;
     }
